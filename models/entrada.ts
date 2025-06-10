@@ -4,6 +4,6 @@ export interface Entrada {
  fonte: string;
  valor: number;
  data: Date;
- created_at: string;
+ created_at?: string;
  id_data: number;
 }

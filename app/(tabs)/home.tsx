@@ -1,9 +1,10 @@
 import { DataActions } from '@/actions/datas';
 import { Data } from '@/models/data';
+import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
-import { Appbar, Button, Card, FAB, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { Appbar, Button, Card, FAB, IconButton, Modal, Portal, Text, TextInput, TouchableRipple } from 'react-native-paper';
 
 export default function Index() {
  const [modalVisible, setModalVisible] = useState(false);
@@ -78,6 +79,10 @@ export default function Index() {
   }
  }
 
+ const handleDetalhesMes = (id: number) => {
+  router.push(`/mes/${id}`);
+ }
+
  useEffect(() => {
   buscaDatas();
  }, []);
@@ -102,19 +107,21 @@ export default function Index() {
     <ScrollView style={styles.scrollView}>
      {meses.map((item) => (
       <Card key={item.id} style={styles.card}>
-       <Card.Content style={styles.cardContent}>
-        <View style={styles.cardLeftContent}>
-         <Text style={styles.mesText}>{`${item.mes} - ${item.ano}`}</Text>
-         <Text style={styles.valorText}>{formatarValor(0)}</Text>
-        </View>
-        <IconButton
-         icon="delete"
-         iconColor="#FF0000"
-         size={24}
-         onPress={() => handleConfirmarExclusao(item)}
-         style={styles.deleteButton}
-        />
-       </Card.Content>
+       <TouchableRipple key={item.id} onPress={() => handleDetalhesMes(item.id)} rippleColor="rgba(5, 60, 222, 0.37)">
+        <Card.Content style={styles.cardContent}>
+         <View style={styles.cardLeftContent}>
+          <Text style={styles.mesText}>{`${item.mes} - ${item.ano}`}</Text>
+          <Text style={styles.valorText}>{formatarValor(0)}</Text>
+         </View>
+         <IconButton
+          icon="delete"
+          iconColor="#FF0000"
+          size={24}
+          onPress={() => handleConfirmarExclusao(item)}
+          style={styles.deleteButton}
+         />
+        </Card.Content>
+       </TouchableRipple>
       </Card>
      ))}
     </ScrollView>
@@ -134,6 +141,9 @@ export default function Index() {
       onChangeText={setNovoMes}
       style={styles.input}
       mode="outlined"
+      autoComplete="off"
+      autoCorrect={false}
+      autoCapitalize='none'
      />
 
      <TextInput
@@ -143,6 +153,9 @@ export default function Index() {
       style={styles.input}
       mode="outlined"
       keyboardType="numeric"
+      autoComplete="off"
+      autoCorrect={false}
+      autoCapitalize='none'
      />
 
      <View style={styles.modalButtons}>

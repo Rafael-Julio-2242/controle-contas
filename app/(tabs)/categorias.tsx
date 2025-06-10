@@ -1,11 +1,11 @@
 import { CategoriesActions } from '@/actions/categories';
+import { SelectBottomSheet, SelectOption } from '@/components/SelectBottomSheet';
 import { Categoria } from '@/models/categoria';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Card, FAB, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
-import { SelectBottomSheet, SelectOption } from './components/SelectBottomSheet';
 
 const ICONES: SelectOption[] = [
   { label: 'Compras', value: 'cart', icon: 'cart' },
@@ -79,12 +79,28 @@ export default function Categorias() {
   };
 
   const handleExcluirCategoria = async (id: number) => {
-    try {
-      await CategoriesActions.delete(db, id);
-      handleBuscarCategorias();
-    } catch (e: any) {
-      console.log('[erro ao excluir categoria]: ', e.message);
-    }
+    Alert.alert(
+      "Confirmar exclusão",
+      "Tem certeza que deseja excluir esta categoria?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await CategoriesActions.delete(db, id);
+              handleBuscarCategorias();
+            } catch (e: any) {
+              console.log('[erro ao excluir categoria]: ', e.message);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
