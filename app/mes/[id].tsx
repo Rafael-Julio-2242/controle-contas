@@ -3,13 +3,13 @@ import { DataActions } from '@/actions/datas';
 import { InfoMes } from '@/interfaces/infoMes';
 import { Categoria } from '@/models/categoria';
 import { Custo } from '@/models/custo';
-import { Entrada } from '@/models/entrada';
+import { CriarEntrada, Entrada } from '@/models/entrada';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
-import { Appbar, Button, DefaultTheme, FAB, IconButton, Modal, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
+import { Appbar, Button, DefaultTheme, IconButton, Modal, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
 
 const theme = {
  ...DefaultTheme,
@@ -80,10 +80,7 @@ export default function Mes() {
  };
 
  const handleSalvarEntrada = async () => {
-  // Implementar lógica de salvar entrada
-
-  const entrada: Entrada = {
-   id: Number(id),
+  const entrada: CriarEntrada = {
    titulo: tituloEntrada,
    fonte: fonteEntrada,
    valor: Number(valorEntrada),
@@ -104,9 +101,15 @@ export default function Mes() {
 
  const handleSalvarCusto = () => {
   // Implementar lógica de salvar custo
+
+
   setModalCustoVisible(false);
   limparFormularioCusto();
  };
+
+ const handleVisualizarEdicaoEntrada = (entrada: Entrada) => {
+  
+ }
 
  const limparFormularioEntrada = () => {
   setTituloEntrada('');
@@ -132,8 +135,13 @@ export default function Mes() {
     {
      text: "Excluir",
      style: "destructive",
-     onPress: () => {
-      // Implementar lógica de exclusão
+     onPress: async () => {
+      try {
+       await DataActions.deleteEntry(db, id)
+       handleBuscaInfo()
+      } catch (e: any) {
+       console.log("Erro ao excluir entrada: ",e);
+      }
      }
     }
    ]
@@ -364,15 +372,7 @@ export default function Mes() {
       </View>
      </Modal>
     </Portal>
-
-    <FAB
-     icon="plus"
-     label="Adicionar"
-     style={styles.fab}
-     onPress={() => {
-      // Implementar lógica para escolher entre adicionar entrada ou custo
-     }}
-    />
+    
    </KeyboardAvoidingView>
   </PaperProvider>
  );

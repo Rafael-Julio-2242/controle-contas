@@ -1,7 +1,7 @@
 import { InfoMes } from "@/interfaces/infoMes";
 import { Custo } from "@/models/custo";
 import { Data } from "@/models/data";
-import { Entrada } from "@/models/entrada";
+import { CriarEntrada, Entrada } from "@/models/entrada";
 import { SQLiteDatabase } from "expo-sqlite";
 
 export class DataActions {
@@ -100,7 +100,7 @@ export class DataActions {
   return result;
  }
 
- static async addEntry(db: SQLiteDatabase, entrada: Entrada) {
+ static async addEntry(db: SQLiteDatabase, entrada: CriarEntrada) {
 
   const sql = `
    INSERT INTO entradas (
