@@ -16,3 +16,11 @@ export interface CriarEntrada {
  data: Date;
  id_data: number;
 }
+
+export interface AtualizarEntrada {
+  id: number;
+  titulo: string;
+  fonte: string;
+  valor: number;
+  data: string;
+}

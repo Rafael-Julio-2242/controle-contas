@@ -1,15 +1,16 @@
 import { CategoriesActions } from '@/actions/categories';
 import { DataActions } from '@/actions/datas';
+import { EntradaModal } from '@/components/EntradaModal';
 import { InfoMes } from '@/interfaces/infoMes';
 import { Categoria } from '@/models/categoria';
 import { Custo } from '@/models/custo';
-import { CriarEntrada, Entrada } from '@/models/entrada';
+import { AtualizarEntrada, CriarEntrada, Entrada } from '@/models/entrada';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
-import { Appbar, Button, DefaultTheme, IconButton, Modal, PaperProvider, Portal, Text, TextInput } from "react-native-paper";
+import { Appbar, Button, DefaultTheme, IconButton, Modal, PaperProvider, Portal, Text, TextInput, TouchableRipple } from "react-native-paper";
 
 const theme = {
  ...DefaultTheme,
@@ -79,36 +80,68 @@ export default function Mes() {
   return infoMes?.custos.reduce((acc, custo) => acc + custo.valor, 0) || 0;
  };
 
- const handleSalvarEntrada = async () => {
-  const entrada: CriarEntrada = {
-   titulo: tituloEntrada,
-   fonte: fonteEntrada,
-   valor: Number(valorEntrada),
-   data: new Date(),
-   id_data: Number(id),
-  }
-
+ const handleSalvarEntrada = async (entrada: CriarEntrada) => {
   try {
-   await DataActions.addEntry(db, entrada)
-   handleBuscaInfo()
+    await DataActions.addEntry(db, entrada)
+    handleBuscaInfo()
   } catch (e: any) {
-   console.log("Erro ao salvar entrada: ",e);
+    console.log("Erro ao salvar entrada: ",e);
   }
 
   setModalEntradaVisible(false);
   limparFormularioEntrada();
  };
 
- const handleSalvarCusto = () => {
-  // Implementar lógica de salvar custo
+ const handleAtualizarEntrada = async (entrada: AtualizarEntrada) => {
+  try {
+    await DataActions.updateEntry(db, entrada)
+    handleBuscaInfo()
+  } catch (e: any) {
+    console.log("Erro ao salvar entrada: ",e);
+  }
 
+  setModalEntradaVisible(false);
+  limparFormularioEntrada();
+ }
+
+ const handleSalvarCusto = async () => {
+
+  const custo: Custo = {
+    id: 0,
+    categoria: categorias.length > 0 ? Number(categoriaCusto) : null,
+    descricao: descricaoCusto,
+    fonte: fonteCusto,
+    valor: Number(valorCusto),
+    data: new Date(),
+    id_data: Number(id),
+  }
+
+  try {
+   await DataActions.addCost(db, custo)
+   handleBuscaInfo()
+  } catch (e: any) {
+   console.log("Erro ao salvar custo: ",e);
+  }
 
   setModalCustoVisible(false);
   limparFormularioCusto();
  };
 
  const handleVisualizarEdicaoEntrada = (entrada: Entrada) => {
-  
+  setSelectedEntrada(entrada); 
+  setTituloEntrada(entrada.titulo);
+  setFonteEntrada(entrada.fonte);
+  setValorEntrada(entrada.valor.toString());
+  setModalEntradaVisible(true);
+ };
+
+ const handleVisualizarEdicaoCusto = (custo: Custo) => {
+  setSelectedCusto(custo);
+  setFonteCusto(custo.fonte);
+  setDescricaoCusto(custo.descricao);
+  setValorCusto(custo.valor.toString());
+  setCategoriaCusto(custo.categoria?.toString() ?? '');
+  setModalCustoVisible(true);
  }
 
  const limparFormularioEntrada = () => {
@@ -157,12 +190,25 @@ export default function Mes() {
     {
      text: "Excluir",
      style: "destructive",
-     onPress: () => {
-      // Implementar lógica de exclusão
+     onPress: async () => {
+      try {
+       await DataActions.deleteCost(db, id)
+       handleBuscaInfo()
+      } catch (e: any) {
+       console.log("Erro ao excluir custo: ",e);
+      }
      }
     }
    ]
   );
+ };
+
+ const handleSaveEntrada = async (entrada: CriarEntrada | AtualizarEntrada) => {
+  if ('id' in entrada) {
+    await handleAtualizarEntrada(entrada);
+  } else {
+    await handleSalvarEntrada(entrada);
+  }
  };
 
  return (
@@ -183,28 +229,44 @@ export default function Mes() {
       <Text style={styles.totalValue}>R$ {calcularTotalCustos().toFixed(2)}</Text>
      </View>
     </View>
+    <View style={styles.totalRestanteBox}>
+      <Text style={styles.totalTitle}>Total Restante</Text>
+      <Text style={styles.totalValue}>R$ {(calcularTotalEntradas() - calcularTotalCustos()).toFixed(2)}</Text>
+    </View>
 
-    <ScrollView style={styles.content}>
+    <View style={styles.content}>
      {/* Entradas */}
      <View style={styles.sectionHeaderRow}>
       <Text style={styles.sectionTitle}>Entradas</Text>
       <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedEntrada(null); setModalEntradaVisible(true); }}>+Nova</Button>
      </View>
      <View style={styles.dashedCard}>
-      {infoMes?.entradas.length ? infoMes.entradas.map((entrada) => (
-       <View key={entrada.id} style={styles.itemRow}>
-        <Text style={styles.itemText}>{entrada.titulo} - R${entrada.valor.toFixed(2)}</Text>
-        <View style={styles.itemActionsRow}>
-         <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => { setSelectedEntrada(entrada); setModalEntradaVisible(true); }} />
-         <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirEntrada(entrada.id)} />
-        </View>
-       </View>
-      )) : <Text style={styles.emptyText}>Nenhuma entrada cadastrada.</Text>}
+      <ScrollView style={styles.scrollContent}>
+       {infoMes?.entradas.length ? infoMes.entradas.map((entrada) => (
+        <TouchableRipple key={entrada.id} onPress={() => router.push(`/entrada/${entrada.id}`)} rippleColor="rgba(5, 60, 222, 0.37)">
+          <View key={entrada.id} style={styles.itemRow}>
+          <Text style={styles.itemText}>{entrada.titulo} - R${entrada.valor.toFixed(2)}</Text>
+          <View style={styles.itemActionsRow}>
+            <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoEntrada(entrada)} />
+            <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirEntrada(entrada.id)} />
+          </View>
+          </View>
+        </TouchableRipple>
+       )) : <Text style={styles.emptyText}>Nenhuma entrada cadastrada.</Text>}
+      </ScrollView>
      </View>
 
      {/* Categorias dos custos */}
      {categorias.length > 0 && (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriasRow}>
+       <Button
+         key="todos"
+         mode={selectedCategoria === 'todos' ? 'contained' : 'outlined'}
+         style={styles.categoriaButton}
+         onPress={() => setSelectedCategoria('todos')}
+        >
+         Todos
+        </Button>
        {categorias.map(cat => (
         <Button
          key={cat.id}
@@ -224,77 +286,33 @@ export default function Mes() {
       <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedCusto(null); setModalCustoVisible(true); }}>+Novo</Button>
      </View>
      <View style={styles.dashedCard}>
-      {infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria.toString() === selectedCategoria).length ?
-       infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria.toString() === selectedCategoria).map((custo) => (
-        <View key={custo.id} style={styles.itemRow}>
-         <Text style={styles.itemText}>{custo.fonte} R$ {custo.valor.toFixed(2)}</Text>
-         <View style={styles.itemActionsRow}>
-          <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => { setSelectedCusto(custo); setModalCustoVisible(true); }} />
-          <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirCusto(custo.id)} />
-         </View>
-        </View>
-       )) : <Text style={styles.emptyText}>Nenhum custo cadastrado.</Text>}
+      <ScrollView style={styles.scrollContent}>
+       {infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).length ?
+        infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).map((custo) => (
+        <TouchableRipple key={custo.id} onPress={() => router.push(`/custo/${custo.id}`)} rippleColor="rgba(5, 60, 222, 0.37)">
+          <View style={styles.itemRow}>
+            <Text style={styles.itemText}>{custo.fonte} R$ {custo.valor.toFixed(2)}</Text>
+              <View style={styles.itemActionsRow}>
+                <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoCusto(custo)} />
+                <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirCusto(custo.id)} />
+              </View>
+          </View>
+        </TouchableRipple>
+        )) : <Text style={styles.emptyText}>Nenhum custo cadastrado.</Text>}
+      </ScrollView>
      </View>
-    </ScrollView>
+    </View>
 
     <Portal>
-     <Modal
+     <EntradaModal
       visible={modalEntradaVisible}
       onDismiss={() => {
        setModalEntradaVisible(false);
        limparFormularioEntrada();
       }}
-      contentContainerStyle={styles.modalContainer}
-     >
-      <Text style={styles.modalTitle}>
-       {selectedEntrada ? 'Editar Entrada' : 'Nova Entrada'}
-      </Text>
-
-      <TextInput
-       label="Título"
-       value={tituloEntrada}
-       onChangeText={setTituloEntrada}
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <TextInput
-       label="Fonte"
-       value={fonteEntrada}
-       onChangeText={setFonteEntrada}
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <TextInput
-       label="Valor"
-       value={valorEntrada}
-       onChangeText={setValorEntrada}
-       keyboardType="numeric"
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <View style={styles.modalButtons}>
-       <Button
-        mode="outlined"
-        onPress={() => {
-         setModalEntradaVisible(false);
-         limparFormularioEntrada();
-        }}
-        style={styles.modalButton}
-       >
-        Cancelar
-       </Button>
-       <Button
-        mode="contained"
-        onPress={handleSalvarEntrada}
-        style={styles.modalButton}
-       >
-        Salvar
-       </Button>
-      </View>
-     </Modal>
+      onSave={handleSaveEntrada}
+      entrada={selectedEntrada ?? undefined}
+     />
 
      <Modal
       visible={modalCustoVisible}
@@ -410,6 +428,19 @@ const styles = StyleSheet.create({
   paddingVertical: 16,
   backgroundColor: '#fff',
  },
+ totalRestanteBox: {
+  flex: 1,
+  borderWidth: 1,
+  borderColor: '#bbb',
+  borderRadius: 12,
+  marginHorizontal: 8,
+  alignItems: 'center',
+  paddingVertical: 16,
+  backgroundColor: '#fff',
+  maxHeight: 100,
+  width: 200,
+  alignSelf: "center"
+ },
  totalTitle: {
   fontSize: 16,
   color: '#222',
@@ -443,6 +474,9 @@ const styles = StyleSheet.create({
   paddingVertical: 2,
   fontFamily: 'monospace',
  },
+ scrollContent: {
+  maxHeight: 200,
+ },
  dashedCard: {
   borderWidth: 1,
   borderStyle: 'dashed',
@@ -450,7 +484,6 @@ const styles = StyleSheet.create({
   borderRadius: 10,
   padding: 10,
   marginBottom: 16,
-  minHeight: 60,
   backgroundColor: '#fff',
  },
  itemRow: {
@@ -491,6 +524,7 @@ const styles = StyleSheet.create({
   marginBottom: 8,
   marginTop: 0,
   minHeight: 40,
+  maxHeight: 45,
  },
  categoriaButton: {
   marginRight: 8,

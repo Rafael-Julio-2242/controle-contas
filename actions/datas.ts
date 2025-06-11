@@ -1,7 +1,7 @@
 import { InfoMes } from "@/interfaces/infoMes";
 import { Custo } from "@/models/custo";
 import { Data } from "@/models/data";
-import { CriarEntrada, Entrada } from "@/models/entrada";
+import { AtualizarEntrada, CriarEntrada, Entrada } from "@/models/entrada";
 import { SQLiteDatabase } from "expo-sqlite";
 
 export class DataActions {
@@ -124,6 +124,37 @@ export class DataActions {
   return result;
  };
 
+ static async getCostById(db: SQLiteDatabase, id: number) {
+
+  const sql = `
+   SELECT * FROM custos WHERE id = ?;
+  `;
+
+  const params = [id];
+
+  const result = await db.getFirstAsync(sql, params);
+
+  if (!result) return null
+
+  return result as Custo;
+ }
+
+ static async getEntryById(db: SQLiteDatabase, id: number) {
+
+  const sql = `
+   SELECT * FROM entradas WHERE id = ?;
+  `;
+
+  const params = [id];
+
+  const result = await db.getFirstAsync(sql, params);
+
+  if (!result) return null;
+
+  return result as Entrada;
+ }
+
+
  static async updateCost(db: SQLiteDatabase, custo: Custo) {
   const sql = `
    UPDATE custos SET
@@ -141,7 +172,7 @@ export class DataActions {
   return result;
  }
 
- static async updateEntry(db: SQLiteDatabase, entrada: Entrada) {
+ static async updateEntry(db: SQLiteDatabase, entrada: AtualizarEntrada) {
   const sql = `
    UPDATE entradas SET
     titulo = ?,
@@ -151,7 +182,7 @@ export class DataActions {
    WHERE id = ?;
   `;
 
-  const params = [entrada.titulo, entrada.fonte, entrada.valor, entrada.data.toISOString(), entrada.id];
+  const params = [entrada.titulo, entrada.fonte, entrada.valor, entrada.data, entrada.id];
 
   const result = await db.runAsync(sql, params);
   return result;

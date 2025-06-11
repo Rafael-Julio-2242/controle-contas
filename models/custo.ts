@@ -3,8 +3,8 @@ export interface Custo {
  valor: number;
  fonte: string;
  descricao: string;
- categoria: number;
+ categoria: number | null;
  data: Date;
- created_at: string;
+ created_at?: string;
  id_data: number;
 }
