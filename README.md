@@ -1,50 +1,94 @@
-# Welcome to your Expo app 👋
+# Controle de Contas
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Um aplicativo móvel desenvolvido com React Native e Expo para gerenciamento de despesas e receitas pessoais.
 
-## Get started
+## 📱 Funcionalidades
 
-1. Install dependencies
+- **Gerenciamento Mensal**: Organize suas finanças por mês e ano
+- **Controle de Entradas**: Registre todas as suas receitas com título, fonte e valor
+- **Controle de Despesas**: Cadastre seus gastos com descrição, fonte, valor e categoria
+- **Categorização**: Organize suas despesas em categorias personalizadas
+- **Relatórios**: Visualize totais de entradas, saídas e saldo restante
+- **Exportação**: Exporte seus dados em formato Excel para análise detalhada
 
-   ```bash
-   npm install
-   ```
+## 🛠️ Tecnologias Utilizadas
 
-2. Start the app
+- React Native
+- Expo
+- TypeScript
+- SQLite (expo-sqlite)
+- React Native Paper (UI Components)
+- React Navigation
+- XLSX (para exportação de dados)
 
-   ```bash
-   npx expo start
-   ```
+## 📦 Instalação
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+1. Clone o repositório:
 ```bash
-npm run reset-project
+git clone https://github.com/seu-usuario/controle-contas.git
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Instale as dependências:
+```bash
+cd controle-contas
+npm install
+```
 
-## Learn more
+3. Inicie o projeto:
+```bash
+npm start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🚀 Como Usar
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+1. **Criar Novo Mês**:
+   - Na tela inicial, clique no botão "+" para adicionar um novo mês
+   - Informe o mês e ano desejados
 
-## Join the community
+2. **Registrar Entradas**:
+   - Acesse o mês desejado
+   - Clique em "+Nova" na seção Entradas
+   - Preencha título, fonte e valor
+   - Adicione a data da entrada
 
-Join our community of developers creating universal apps.
+3. **Registrar Despesas**:
+   - Acesse o mês desejado
+   - Clique em "+Novo" na seção Custos
+   - Preencha descrição, fonte, valor e categoria
+   - Adicione a data da despesa
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4. **Exportar Dados**:
+   - Na tela do mês, clique no botão "Exportar"
+   - Um arquivo Excel será gerado com:
+     - Totais gerais
+     - Lista de entradas
+     - Lista de despesas
+
+## 📊 Estrutura do Banco de Dados
+
+O aplicativo utiliza SQLite com as seguintes tabelas:
+
+- **datas**: Armazena os meses e anos
+- **categorias**: Categorias para classificação de despesas
+- **custos**: Registro de despesas
+- **entradas**: Registro de receitas
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Para contribuir:
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📧 Contato
+
+Seu Nome - [@seutwitter](https://twitter.com/seutwitter) - email@exemplo.com
+
+Link do Projeto: [https://github.com/seu-usuario/controle-contas](https://github.com/seu-usuario/controle-contas)

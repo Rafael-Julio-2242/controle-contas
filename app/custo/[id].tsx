@@ -62,6 +62,7 @@ export default function CustoPage() {
       setCategorias(categoriasEncontradas);
     } catch (e: any) {
       console.log("Erro ao buscar categorias: ", e);
+      Alert.alert("Houve um erro ao buscar categorias, contate o suporte: ", e.message);
     }
   };
 
@@ -72,6 +73,7 @@ export default function CustoPage() {
       await buscarCusto();
     } catch (e: any) {
       console.log("Erro ao atualizar custo: ", e);
+      Alert.alert("Houve um erro ao atualizar custo, contate o suporte: ", e.message);
     }
   }
 
