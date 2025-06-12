@@ -1,14 +1,15 @@
 import { Categoria } from '@/models/categoria';
-import { Custo } from '@/models/custo';
+import { AtualizarCusto, CriarCusto, Custo } from '@/models/custo';
 import { Picker } from '@react-native-picker/picker';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { DatePickerButton } from './DatePickerButton';
 
 interface CustoModalProps {
   visible: boolean;
   onDismiss: () => void;
-  onSave: (custo: Custo) => Promise<void>;
+  onSave: (custo: CriarCusto | AtualizarCusto) => Promise<void>;
   categorias: Categoria[];
   custo?: Custo;
 }
@@ -18,10 +19,38 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
   const [descricaoCusto, setDescricaoCusto] = useState(custo?.descricao ?? '');
   const [valorCusto, setValorCusto] = useState(custo?.valor.toString() ?? '');
   const [categoriaCusto, setCategoriaCusto] = useState(custo?.categoria?.toString() ?? '');
+  const [dataCusto, setDataCusto] = useState(custo?.data ? new Date(custo.data) : new Date());
 
   const handleSave = async () => {
 
-    let custoData = custo? (custo.data as any) : new Date();
+    if (custo) {
+      const custoAtualizado: AtualizarCusto = {
+        id: custo.id,
+        fonte: fonteCusto,
+        descricao: descricaoCusto,
+        valor: Number(valorCusto),
+        categoria: categorias.length > 0 ? Number(categoriaCusto) : null,
+        data: dataCusto,
+        id_data: custo.id_data,
+      }
+      await onSave(custoAtualizado);
+    } else {
+      const novoCusto: CriarCusto = {
+        fonte: fonteCusto,
+        descricao: descricaoCusto,
+        valor: Number(valorCusto),
+        categoria: categorias.length > 0 ? Number(categoriaCusto) : null,
+        data: dataCusto,
+        id_data: 0,
+      }
+
+      await onSave(novoCusto);
+      setCategoriaCusto('');
+      setDataCusto(new Date());
+      setDescricaoCusto('');
+      setFonteCusto('');
+      setValorCusto('');
+    }
 
     const custoAtualizado: Custo = {
       id: custo?.id ?? 0,
@@ -29,7 +58,7 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
       descricao: descricaoCusto,
       fonte: fonteCusto,
       valor: Number(valorCusto),
-      data: typeof custoData === 'string' ? new Date(custoData) : custoData,
+      data: dataCusto,
       id_data: custo?.id_data ?? 0,
     };
 
@@ -37,11 +66,38 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
     onDismiss();
   };
 
+  useEffect(() => {
+    if (custo) {
+      setFonteCusto(custo.fonte);
+      setDescricaoCusto(custo.descricao);
+      setValorCusto(custo.valor.toString());
+      setCategoriaCusto(custo.categoria?.toString() ?? '');
+      setDataCusto(custo.data ? new Date(custo.data) : new Date());
+    }
+  }, [custo]);
+
+  const limparFormulario = () => {
+    setFonteCusto('');
+    setDescricaoCusto('');
+    setValorCusto('');
+    setCategoriaCusto('');
+    setDataCusto(new Date());
+  }
+
+  const handleCancelar = () => {
+    limparFormulario();
+    onDismiss();
+  }
+  
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >      
       <Portal>
         <Modal
           visible={visible}
-          onDismiss={onDismiss}
+          onDismiss={handleCancelar}
           contentContainerStyle={styles.modalContainer}
         >
           <Text style={styles.modalTitle}>
@@ -54,6 +110,10 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
             onChangeText={setFonteCusto}
             style={styles.input}
             mode="outlined"
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
           />
 
           <TextInput
@@ -62,6 +122,10 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
             onChangeText={setDescricaoCusto}
             style={styles.input}
             mode="outlined"
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
           />
 
           <TextInput
@@ -71,6 +135,15 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
             keyboardType="numeric"
             style={styles.input}
             mode="outlined"
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
+          />
+
+          <DatePickerButton
+            date={dataCusto}
+            onDateChange={setDataCusto}
           />
 
           <View style={styles.pickerContainer}>
@@ -94,7 +167,7 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
           <View style={styles.modalButtons}>
             <Button
               mode="outlined"
-              onPress={onDismiss}
+              onPress={handleCancelar}
               style={styles.modalButton}
             >
               Cancelar
@@ -109,6 +182,7 @@ export function CustoModal({ visible, onDismiss, onSave, categorias, custo }: Cu
           </View>
         </Modal>
       </Portal>
+    </KeyboardAvoidingView>
   );
 }
 

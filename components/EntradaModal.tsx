@@ -1,8 +1,8 @@
 import { AtualizarEntrada, CriarEntrada, Entrada } from '@/models/entrada';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { DatePickerButton } from './DatePickerButton';
 
 interface EntradaModalProps {
   visible: boolean;
@@ -16,14 +16,6 @@ export function EntradaModal({ visible, onDismiss, onSave, entrada }: EntradaMod
   const [fonteEntrada, setFonteEntrada] = useState(entrada?.fonte ?? '');
   const [valorEntrada, setValorEntrada] = useState(entrada?.valor.toString() ?? '');
   const [dataEntrada, setDataEntrada] = useState(entrada?.data ? new Date(entrada.data) : new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setDataEntrada(selectedDate);
-    }
-  };
 
   const handleSave = async () => {
     if (entrada) {
@@ -45,83 +37,107 @@ export function EntradaModal({ visible, onDismiss, onSave, entrada }: EntradaMod
       };
       await onSave(novaEntrada);
     }
+    limparFormulario();
     onDismiss();
   };
 
+  useEffect(() => {
+    if (entrada) {
+      setTituloEntrada(entrada.titulo);
+      setFonteEntrada(entrada.fonte);
+      setValorEntrada(entrada.valor.toString());
+      setDataEntrada(entrada.data ? new Date(entrada.data) : new Date());
+    }
+  }, [entrada]);
+
+  const limparFormulario = () => {
+    setTituloEntrada('');
+    setFonteEntrada('');
+    setValorEntrada('');
+    setDataEntrada(new Date());
+  }
+
+  const handleCancelar = () => {
+    limparFormulario();
+    onDismiss();
+  }
+
   return (
-    <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={onDismiss}
-        contentContainerStyle={styles.modalContainer}
-      >
-        <Text style={styles.modalTitle}>
-          {entrada ? 'Editar Entrada' : 'Nova Entrada'}
-        </Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <Portal>
+        <Modal
+          visible={visible}
+          onDismiss={handleCancelar}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Text style={styles.modalTitle}>
+            {entrada ? 'Editar Entrada' : 'Nova Entrada'}
+          </Text>
 
-        <TextInput
-          label="Título"
-          value={tituloEntrada}
-          onChangeText={setTituloEntrada}
-          style={styles.input}
-          mode="outlined"
-        />
-
-        <TextInput
-          label="Fonte"
-          value={fonteEntrada}
-          onChangeText={setFonteEntrada}
-          style={styles.input}
-          mode="outlined"
-        />
-
-        <TextInput
-          label="Valor"
-          value={valorEntrada}
-          onChangeText={setValorEntrada}
-          keyboardType="numeric"
-          style={styles.input}
-          mode="outlined"
-        />
-
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateLabel}>Data</Text>
-          <Button
+          <TextInput
+            label="Título"
+            value={tituloEntrada}
+            onChangeText={setTituloEntrada}
+            style={styles.input}
             mode="outlined"
-            onPress={() => setShowDatePicker(true)}
-            style={styles.dateButton}
-          >
-            {dataEntrada.toLocaleDateString('pt-BR')}
-          </Button>
-        </View>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={dataEntrada}
-            mode="date"
-            onChange={onChange}
-            display="default"
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
           />
-        )}
 
-        <View style={styles.modalButtons}>
-          <Button
+          <TextInput
+            label="Fonte"
+            value={fonteEntrada}
+            onChangeText={setFonteEntrada}
+            style={styles.input}
             mode="outlined"
-            onPress={onDismiss}
-            style={styles.modalButton}
-          >
-            Cancelar
-          </Button>
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            style={styles.modalButton}
-          >
-            {entrada ? 'Atualizar' : 'Salvar'}
-          </Button>
-        </View>
-      </Modal>
-    </Portal>
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
+          />
+
+          <TextInput
+            label="Valor"
+            value={valorEntrada}
+            onChangeText={setValorEntrada}
+            keyboardType="numeric"
+            style={styles.input}
+            mode="outlined"
+            autoComplete="off"
+            autoCorrect={false}
+            autoFocus={false}
+            autoCapitalize='none'
+          />
+
+          <DatePickerButton
+            date={dataEntrada}
+            onDateChange={setDataEntrada}
+          />
+
+          <View style={styles.modalButtons}>
+            <Button
+              mode="outlined"
+              onPress={handleCancelar}
+              style={styles.modalButton}
+            >
+              Cancelar
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleSave}
+              style={styles.modalButton}
+            >
+              {entrada ? 'Atualizar' : 'Salvar'}
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -140,17 +156,6 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
-  },
-  dateContainer: {
-    marginBottom: 16,
-  },
-  dateLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  dateButton: {
-    borderColor: '#666',
   },
   modalButtons: {
     flexDirection: 'row',

@@ -3,9 +3,7 @@ import { Stack } from "expo-router";
 import { SQLiteProvider } from "expo-sqlite";
 import { DefaultTheme, PaperProvider } from "react-native-paper";
 
-
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout() {
  const theme = {
   ...DefaultTheme,
   dark: false,        // para manter sempre claro

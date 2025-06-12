@@ -3,7 +3,7 @@ import { Data } from '@/models/data';
 import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { Appbar, Button, Card, FAB, IconButton, Modal, Portal, Text, TextInput, TouchableRipple } from 'react-native-paper';
 
 export default function Index() {
@@ -24,11 +24,6 @@ export default function Index() {
   });
  };
 
- const handleExportar = () => {
-  // Função será implementada posteriormente
-  console.log('Exportar CSV');
- };
-
  const handleExcluir = async (index: number) => {
   try {
    await DataActions.delete(db, index);
@@ -37,6 +32,7 @@ export default function Index() {
    setMesParaExcluir(null);
   } catch (e: any) {
    console.log("Erro ao excluir data: ", e);
+   Alert.alert("Houve um erro ao excluir data, contate o suporte: ", e.message);
   }
  };
 
@@ -48,6 +44,7 @@ export default function Index() {
    buscaDatas();
   } catch (e: any) {
    console.log("Erro ao adicionar nova data: ", e);
+   Alert.alert("Houve um erro ao adicionar nova data, contate o suporte: ", e.message);
   }
   setModalVisible(false);
   setNovoMes('');
@@ -76,6 +73,7 @@ export default function Index() {
    setMeses(datas);
   } catch (e: any) {
    console.log("Erro ao buscar datas: ", e);
+   Alert.alert("Houve um erro ao buscar datas, contate o suporte: ", e.message);
   }
  }
 
@@ -96,13 +94,6 @@ export default function Index() {
    <View style={styles.content}>
     <View style={styles.headerContent}>
      <Text style={styles.subtitle}>Meses</Text>
-     <Button
-      mode="contained"
-      onPress={handleExportar}
-      style={styles.exportButton}
-     >
-      Exportar tudo
-     </Button>
     </View>
     <ScrollView style={styles.scrollView}>
      {meses.map((item) => (
@@ -111,7 +102,7 @@ export default function Index() {
         <Card.Content style={styles.cardContent}>
          <View style={styles.cardLeftContent}>
           <Text style={styles.mesText}>{`${item.mes} - ${item.ano}`}</Text>
-          <Text style={styles.valorText}>{formatarValor(0)}</Text>
+          <Text style={{ ...styles.valorText, color: item.entradas_total - item.custos_total > 0 ? '#2196F3' : '#FF0000' }}>{formatarValor(item.entradas_total - item.custos_total)}</Text>
          </View>
          <IconButton
           icon="delete"
@@ -127,85 +118,90 @@ export default function Index() {
     </ScrollView>
    </View>
 
-   <Portal>
-    <Modal
-     visible={modalVisible}
-     onDismiss={handleCancelar}
-     contentContainerStyle={styles.modalContainer}
-    >
-     <Text style={styles.modalTitle}>Adicionar Novo Mês</Text>
+   <KeyboardAvoidingView>
+    <Portal>
 
-     <TextInput
-      label="Mês"
-      value={novoMes}
-      onChangeText={setNovoMes}
-      style={styles.input}
-      mode="outlined"
-      autoComplete="off"
-      autoCorrect={false}
-      autoCapitalize='none'
-     />
+     <Modal
+      visible={modalVisible}
+      onDismiss={handleCancelar}
+      contentContainerStyle={styles.modalContainer}
+     >
+      <Text style={styles.modalTitle}>Adicionar Novo Mês</Text>
 
-     <TextInput
-      label="Ano"
-      value={novoAno}
-      onChangeText={setNovoAno}
-      style={styles.input}
-      mode="outlined"
-      keyboardType="numeric"
-      autoComplete="off"
-      autoCorrect={false}
-      autoCapitalize='none'
-     />
-
-     <View style={styles.modalButtons}>
-      <Button
+      <TextInput
+       label="Mês"
+       value={novoMes}
+       onChangeText={setNovoMes}
+       style={styles.input}
        mode="outlined"
-       onPress={handleCancelar}
-       style={styles.modalButton}
-      >
-       Cancelar
-      </Button>
-      <Button
-       mode="contained"
-       onPress={handleAdicionar}
-       style={styles.modalButton}
-       disabled={!isFormValid}
-      >
-       Confirmar
-      </Button>
-     </View>
-    </Modal>
+       autoComplete="off"
+       autoCorrect={false}
+       autoCapitalize='none'
+       autoFocus={false}
+      />
 
-    <Modal
-     visible={modalExclusaoVisible}
-     onDismiss={handleCancelarExclusao}
-     contentContainerStyle={styles.modalContainer}
-    >
-     <Text style={styles.modalTitle}>Confirmar Exclusão</Text>
-
-     <Text style={styles.modalText}>
-      Tem certeza que deseja excluir o mês {mesParaExcluir?.mes} - {mesParaExcluir?.ano}?
-     </Text>
-
-     <View style={styles.modalButtons}>
-      <Button
+      <TextInput
+       label="Ano"
+       value={novoAno}
+       onChangeText={setNovoAno}
+       style={styles.input}
        mode="outlined"
-       onPress={handleCancelarExclusao}
-       style={styles.modalButton}
-      >
-       Cancelar
-      </Button>
-      <Button
-       mode="contained"
-       onPress={() => mesParaExcluir && handleExcluir(mesParaExcluir.id)}
-       style={[styles.modalButton, styles.deleteConfirmButton]}
-      >
-       Excluir
-      </Button>
-     </View>
-    </Modal>
-   </Portal>
+       keyboardType="numeric"
+       autoComplete="off"
+       autoCorrect={false}
+       autoFocus={false}
+       autoCapitalize='none'
+      />
+
+      <View style={styles.modalButtons}>
+       <Button
+        mode="outlined"
+        onPress={handleCancelar}
+        style={styles.modalButton}
+       >
+        Cancelar
+       </Button>
+       <Button
+        mode="contained"
+        onPress={handleAdicionar}
+        style={styles.modalButton}
+        disabled={!isFormValid}
+       >
+        Confirmar
+       </Button>
+      </View>
+     </Modal>
+
+     <Modal
+      visible={modalExclusaoVisible}
+      onDismiss={handleCancelarExclusao}
+      contentContainerStyle={styles.modalContainer}
+     >
+      <Text style={styles.modalTitle}>Confirmar Exclusão</Text>
+
+      <Text style={styles.modalText}>
+       Tem certeza que deseja excluir o mês {mesParaExcluir?.mes} - {mesParaExcluir?.ano}?
+      </Text>
+
+      <View style={styles.modalButtons}>
+       <Button
+        mode="outlined"
+        onPress={handleCancelarExclusao}
+        style={styles.modalButton}
+       >
+        Cancelar
+       </Button>
+       <Button
+        mode="contained"
+        onPress={() => mesParaExcluir && handleExcluir(mesParaExcluir.id)}
+        style={[styles.modalButton, styles.deleteConfirmButton]}
+       >
+        Excluir
+       </Button>
+      </View>
+     </Modal>
+    </Portal>
+   </KeyboardAvoidingView>
 
    <FAB
     icon="plus"

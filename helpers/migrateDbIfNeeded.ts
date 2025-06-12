@@ -1,14 +1,13 @@
 import { SQLiteDatabase } from "expo-sqlite";
 
 export default async function migrateDbIfNeeded(db: SQLiteDatabase) {
- const DATABASE_VERSION = 3;
+ const DATABASE_VERSION = 5;
 
  let versionResult = await db.getFirstAsync<{user_version: number}>(
   'PRAGMA user_version'
  );
 
  if (!versionResult || versionResult.user_version < DATABASE_VERSION) {
-  console.log('Migrating database...');
   
    await db.execAsync(`
     DROP TABLE IF EXISTS migrations;
@@ -77,8 +76,5 @@ export default async function migrateDbIfNeeded(db: SQLiteDatabase) {
    PRAGMA user_version = ${DATABASE_VERSION};
   `);
 
-  console.log('Database migrated successfully');
- } else {
-  console.log('Database is up to date');
  }
 }

@@ -1,16 +1,18 @@
 import { CategoriesActions } from '@/actions/categories';
 import { DataActions } from '@/actions/datas';
+import { CustoModal } from '@/components/CustoModal';
 import { EntradaModal } from '@/components/EntradaModal';
+import exportMonthCsv from '@/helpers/exportMonthCsv';
 import { InfoMes } from '@/interfaces/infoMes';
 import { Categoria } from '@/models/categoria';
-import { Custo } from '@/models/custo';
+import { AtualizarCusto, CriarCusto, Custo } from '@/models/custo';
 import { AtualizarEntrada, CriarEntrada, Entrada } from '@/models/entrada';
-import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
-import { Appbar, Button, DefaultTheme, IconButton, Modal, PaperProvider, Portal, Text, TextInput, TouchableRipple } from "react-native-paper";
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Dimensions, KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
+import { PieChart } from 'react-native-chart-kit';
+import { Appbar, Button, DefaultTheme, IconButton, PaperProvider, Portal, Text, TouchableRipple } from "react-native-paper";
 
 const theme = {
  ...DefaultTheme,
@@ -49,6 +51,7 @@ export default function Mes() {
  const [descricaoCusto, setDescricaoCusto] = useState('');
  const [valorCusto, setValorCusto] = useState('');
  const [categoriaCusto, setCategoriaCusto] = useState('');
+ const [dataCusto, setDataCusto] = useState(new Date());
 
  const db = useSQLiteContext();
 
@@ -64,6 +67,7 @@ export default function Mes() {
    setCategorias(categorias)
   } catch (e: any) {
    console.log("Erro ao buscar informações do mês: ",e);
+   Alert.alert("Houve um erro ao buscar informações do mês, contate o suporte: ", e.message);
   }
 
  }
@@ -82,10 +86,15 @@ export default function Mes() {
 
  const handleSalvarEntrada = async (entrada: CriarEntrada) => {
   try {
+    entrada = {
+      ...entrada,
+      id_data: Number(id)
+    }
     await DataActions.addEntry(db, entrada)
     handleBuscaInfo()
   } catch (e: any) {
     console.log("Erro ao salvar entrada: ",e);
+    Alert.alert("Houve um erro ao salvar entrada, contate o suporte: ", e.message);
   }
 
   setModalEntradaVisible(false);
@@ -98,34 +107,45 @@ export default function Mes() {
     handleBuscaInfo()
   } catch (e: any) {
     console.log("Erro ao salvar entrada: ",e);
+    Alert.alert("Houve um erro ao atualizar entrada, contate o suporte: ", e.message);
   }
 
   setModalEntradaVisible(false);
   limparFormularioEntrada();
  }
 
- const handleSalvarCusto = async () => {
-
-  const custo: Custo = {
-    id: 0,
-    categoria: categorias.length > 0 ? Number(categoriaCusto) : null,
-    descricao: descricaoCusto,
-    fonte: fonteCusto,
-    valor: Number(valorCusto),
-    data: new Date(),
-    id_data: Number(id),
-  }
-
+ const handleSalvarCusto = async (custo: CriarCusto) => {
   try {
+    custo = {
+      ...custo,
+      id_data: Number(id)
+    }
    await DataActions.addCost(db, custo)
    handleBuscaInfo()
   } catch (e: any) {
    console.log("Erro ao salvar custo: ",e);
+   Alert.alert("Houve um erro ao salvar custo, contate o suporte: ", e.message);
+   return;
   }
 
   setModalCustoVisible(false);
   limparFormularioCusto();
  };
+
+ const handleAtualizarCusto = async (custo: AtualizarCusto) => {
+  try {
+    await DataActions.updateCost(db, custo)
+    handleBuscaInfo()
+
+  } catch (e: any) {
+    console.log("Erro ao atualizar custo: ",e);
+    Alert.alert("Houve um erro ao atualizar custo, contate o suporte: ", e.message);
+    return;
+  }
+
+  setModalCustoVisible(false);
+  limparFormularioCusto();
+ }
 
  const handleVisualizarEdicaoEntrada = (entrada: Entrada) => {
   setSelectedEntrada(entrada); 
@@ -136,11 +156,12 @@ export default function Mes() {
  };
 
  const handleVisualizarEdicaoCusto = (custo: Custo) => {
-  setSelectedCusto(custo);
-  setFonteCusto(custo.fonte);
-  setDescricaoCusto(custo.descricao);
-  setValorCusto(custo.valor.toString());
-  setCategoriaCusto(custo.categoria?.toString() ?? '');
+  setSelectedCusto(prev => custo);
+  setFonteCusto((prev) => custo.fonte);
+  setDescricaoCusto((prev) => custo.descricao);
+  setValorCusto((prev) => custo.valor.toString());
+  setCategoriaCusto((prev) => custo.categoria?.toString() ?? '');
+  setDataCusto((prev) => custo.data ? new Date(custo.data) : new Date());
   setModalCustoVisible(true);
  }
 
@@ -148,7 +169,7 @@ export default function Mes() {
   setTituloEntrada('');
   setFonteEntrada('');
   setValorEntrada('');
-  setSelectedEntrada(null);
+  setSelectedEntrada(prev => null);
  };
 
  const limparFormularioCusto = () => {
@@ -156,7 +177,8 @@ export default function Mes() {
   setDescricaoCusto('');
   setValorCusto('');
   setCategoriaCusto('');
-  setSelectedCusto(null);
+  setDataCusto(new Date());
+  setSelectedCusto(prev => null);
  };
 
  const handleExcluirEntrada = (id: number) => {
@@ -174,6 +196,7 @@ export default function Mes() {
        handleBuscaInfo()
       } catch (e: any) {
        console.log("Erro ao excluir entrada: ",e);
+       Alert.alert("Houve um erro ao excluir entrada, contate o suporte: ", e.message);
       }
      }
     }
@@ -196,6 +219,7 @@ export default function Mes() {
        handleBuscaInfo()
       } catch (e: any) {
        console.log("Erro ao excluir custo: ",e);
+       Alert.alert("Houve um erro ao excluir custo, contate o suporte: ", e.message);
       }
      }
     }
@@ -209,187 +233,225 @@ export default function Mes() {
   } else {
     await handleSalvarEntrada(entrada);
   }
+
+  limparFormularioEntrada();
+  setModalEntradaVisible(false);
  };
+
+ const handleSaveCusto = async (custo: CriarCusto | AtualizarCusto) => {
+  if ('id' in custo) {
+    await handleAtualizarCusto(custo);
+  } else {
+    await handleSalvarCusto(custo);
+  }
+ }
+
+ const handleVoltar = () => {
+  router.replace("/home");
+ }
+
+ const handleVisualizarEntrada = (idEntrada: number) => {
+  router.push({ pathname: "/entrada/[id]", params: { id: idEntrada.toString(), idMes: id } });
+ }
+
+ const handleVisualizarCusto = (idCusto: number) => {
+  router.push({ pathname: "/custo/[id]", params: { id: idCusto.toString(), idMes: id } });
+ }
+
+ const handleExportarCsv = async () => {
+  if (!infoMes) return;
+
+  try {
+
+   const success = await exportMonthCsv(infoMes, categorias);
+
+   if (!success) {
+    Alert.alert("Erro ao exportar CSV", "Não foi possível exportar o CSV. Contate o suporte");
+   }
+  } catch (e: any) {
+    console.log("Erro ao exportar CSV: ", e);
+    Alert.alert("Houve um erro ao exportar CSV, contate o suporte: ", e.message);
+  }
+
+ }
+
+ const screenWidth = Dimensions.get('window').width;
+
+ const chartData = useMemo(() => {
+  if (!infoMes) return [];
+
+  if (infoMes.custos.length === 0) return [];
+
+  const totalCustos = infoMes.custos.reduce((acc, custo) => acc + custo.valor, 0);
+
+  const custosPorCategoria = infoMes.custos.reduce((acc, custo) => {
+    const categoria = categorias.find(cat => cat.id === custo.categoria) || "Nao definido";
+
+    if (!acc[typeof categoria === 'string' ? categoria : categoria.id]) {
+      acc[typeof categoria === 'string' ? categoria : categoria.id] = 0;
+    }
+    acc[typeof categoria === 'string' ? categoria : categoria.id] += custo.valor;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const data = Object.entries(custosPorCategoria).map(([categoria, valor]) => {
+    const categoriaObj = categorias.find(cat => cat.id === Number(categoria)) || "Nao definido";
+    
+    return {
+      name: typeof categoriaObj === 'string' ? categoriaObj : categoriaObj.nome,
+      population: valor / totalCustos,
+      color: typeof categoriaObj === 'string' ? '#FFC107' : categoriaObj.cor,
+      legendFontColor: '#333',
+      legendFontSize: 14,
+    }
+  });
+
+  return data;
+ }, [infoMes])
+
+  const chartConfig = {
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+  };
 
  return (
   <PaperProvider theme={theme}>
    <KeyboardAvoidingView style={styles.container}>
     <Appbar.Header style={styles.header}>
-     <Appbar.BackAction onPress={() => router.back()} />
+     <Appbar.BackAction onPress={handleVoltar} />
      <Appbar.Content title={`${infoMes?.mes ?? 'Mês'} - ${infoMes?.ano ?? 'Ano'}`} style={{ alignItems: 'center' }} />
     </Appbar.Header>
 
-    <View style={styles.totaisRow}>
-     <View style={styles.totalBox}>
-      <Text style={styles.totalTitle}>Total Recebido</Text>
-      <Text style={styles.totalValue}>R$ {calcularTotalEntradas().toFixed(2)}</Text>
-     </View>
-     <View style={styles.totalBox}>
-      <Text style={styles.totalTitle}>Total Gasto</Text>
-      <Text style={styles.totalValue}>R$ {calcularTotalCustos().toFixed(2)}</Text>
-     </View>
-    </View>
-    <View style={styles.totalRestanteBox}>
-      <Text style={styles.totalTitle}>Total Restante</Text>
-      <Text style={styles.totalValue}>R$ {(calcularTotalEntradas() - calcularTotalCustos()).toFixed(2)}</Text>
-    </View>
 
-    <View style={styles.content}>
-     {/* Entradas */}
-     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>Entradas</Text>
-      <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedEntrada(null); setModalEntradaVisible(true); }}>+Nova</Button>
-     </View>
-     <View style={styles.dashedCard}>
-      <ScrollView style={styles.scrollContent}>
-       {infoMes?.entradas.length ? infoMes.entradas.map((entrada) => (
-        <TouchableRipple key={entrada.id} onPress={() => router.push(`/entrada/${entrada.id}`)} rippleColor="rgba(5, 60, 222, 0.37)">
-          <View key={entrada.id} style={styles.itemRow}>
-          <Text style={styles.itemText}>{entrada.titulo} - R${entrada.valor.toFixed(2)}</Text>
-          <View style={styles.itemActionsRow}>
-            <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoEntrada(entrada)} />
-            <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirEntrada(entrada.id)} />
-          </View>
-          </View>
-        </TouchableRipple>
-       )) : <Text style={styles.emptyText}>Nenhuma entrada cadastrada.</Text>}
-      </ScrollView>
-     </View>
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ alignItems: 'flex-end', marginTop: 5 }}>
+        <Button mode="outlined" style={styles.addButton} onPress={handleExportarCsv}>Exportar</Button>
+      </View>
 
-     {/* Categorias dos custos */}
-     {categorias.length > 0 && (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriasRow}>
-       <Button
-         key="todos"
-         mode={selectedCategoria === 'todos' ? 'contained' : 'outlined'}
-         style={styles.categoriaButton}
-         onPress={() => setSelectedCategoria('todos')}
-        >
-         Todos
-        </Button>
-       {categorias.map(cat => (
+      <View style={styles.totaisRow}>
+      <View style={styles.totalBox}>
+        <Text style={styles.totalTitle}>Total Recebido</Text>
+        <Text style={[styles.totalValue, { color: '#2E8B57' }]}>R$ {calcularTotalEntradas().toFixed(2)}</Text>
+      </View>
+      <View style={styles.totalBox}>
+        <Text style={styles.totalTitle}>Total Gasto</Text>
+        <Text style={[styles.totalValue, { color: '#DC143C' }]}>R$ {calcularTotalCustos().toFixed(2)}</Text>
+      </View>
+      </View>
+      <View style={styles.totalRestanteBox}>
+        <Text style={styles.totalTitle}>Total Restante</Text>
+        <Text style={[styles.totalValue, { color: (calcularTotalEntradas() - calcularTotalCustos()) >= 0 ? '#2E8B57' : '#DC143C' }]}>
+          R$ {(calcularTotalEntradas() - calcularTotalCustos()).toFixed(2)}
+        </Text>
+      </View>
+
+      <View style={styles.content}>
+      {/* Entradas */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Entradas</Text>
+        <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedEntrada(null); setModalEntradaVisible(true); }}>+Nova</Button>
+      </View>
+      <View style={styles.dashedCard}>
+        <ScrollView style={styles.scrollContent}>
+        {infoMes?.entradas.length ? infoMes.entradas.map((entrada) => (
+          <TouchableRipple key={entrada.id} onPress={() => handleVisualizarEntrada(entrada.id)} rippleColor="rgba(5, 60, 222, 0.37)">
+            <View key={entrada.id} style={styles.itemRow}>
+            <Text style={styles.itemText}>{entrada.titulo} - R${entrada.valor.toFixed(2)}</Text>
+            <View style={styles.itemActionsRow}>
+              <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoEntrada(entrada)} />
+              <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirEntrada(entrada.id)} />
+            </View>
+            </View>
+          </TouchableRipple>
+        )) : <Text style={styles.emptyText}>Nenhuma entrada cadastrada.</Text>}
+        </ScrollView>
+      </View>
+
+      {/* Categorias dos custos */}
+      {categorias.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriasRow}>
         <Button
-         key={cat.id}
-         mode={selectedCategoria === cat.id.toString() ? 'contained' : 'outlined'}
-         style={styles.categoriaButton}
-         onPress={() => setSelectedCategoria(cat.id.toString())}
-        >
-         {cat.nome}
-        </Button>
-       ))}
-      </ScrollView>
-     )}
-
-     {/* Custos */}
-     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>Custos</Text>
-      <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedCusto(null); setModalCustoVisible(true); }}>+Novo</Button>
-     </View>
-     <View style={styles.dashedCard}>
-      <ScrollView style={styles.scrollContent}>
-       {infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).length ?
-        infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).map((custo) => (
-        <TouchableRipple key={custo.id} onPress={() => router.push(`/custo/${custo.id}`)} rippleColor="rgba(5, 60, 222, 0.37)">
-          <View style={styles.itemRow}>
-            <Text style={styles.itemText}>{custo.fonte} R$ {custo.valor.toFixed(2)}</Text>
-              <View style={styles.itemActionsRow}>
-                <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoCusto(custo)} />
-                <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirCusto(custo.id)} />
-              </View>
-          </View>
-        </TouchableRipple>
-        )) : <Text style={styles.emptyText}>Nenhum custo cadastrado.</Text>}
-      </ScrollView>
-     </View>
-    </View>
-
-    <Portal>
-     <EntradaModal
-      visible={modalEntradaVisible}
-      onDismiss={() => {
-       setModalEntradaVisible(false);
-       limparFormularioEntrada();
-      }}
-      onSave={handleSaveEntrada}
-      entrada={selectedEntrada ?? undefined}
-     />
-
-     <Modal
-      visible={modalCustoVisible}
-      onDismiss={() => {
-       setModalCustoVisible(false);
-       limparFormularioCusto();
-      }}
-      contentContainerStyle={styles.modalContainer}
-     >
-      <Text style={styles.modalTitle}>
-       {selectedCusto ? 'Editar Custo' : 'Novo Custo'}
-      </Text>
-
-      <TextInput
-       label="Fonte"
-       value={fonteCusto}
-       onChangeText={setFonteCusto}
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <TextInput
-       label="Descrição"
-       value={descricaoCusto}
-       onChangeText={setDescricaoCusto}
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <TextInput
-       label="Valor"
-       value={valorCusto}
-       onChangeText={setValorCusto}
-       keyboardType="numeric"
-       style={styles.input}
-       mode="outlined"
-      />
-
-      <View style={styles.pickerContainer}>
-       <Text style={styles.pickerLabel}>Categoria</Text>
-       <Picker
-        selectedValue={categoriaCusto}
-        onValueChange={setCategoriaCusto}
-        style={styles.picker}
-       >
-        <Picker.Item label="Selecione uma categoria" value="" />
-        {categorias.map((categoria) => (
-         <Picker.Item
-          key={categoria.id}
-          label={categoria.nome}
-          value={categoria.id.toString()}
-         />
+          key="todos"
+          mode={selectedCategoria === 'todos' ? 'contained' : 'outlined'}
+          style={styles.categoriaButton}
+          onPress={() => setSelectedCategoria('todos')}
+          >
+          Todos
+          </Button>
+        {categorias.map(cat => (
+          <Button
+          key={cat.id}
+          mode={selectedCategoria === cat.id.toString() ? 'contained' : 'outlined'}
+          style={styles.categoriaButton}
+          onPress={() => setSelectedCategoria(cat.id.toString())}
+          >
+          {cat.nome}
+          </Button>
         ))}
-       </Picker>
+        </ScrollView>
+      )}
+
+      {/* Custos */}
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Custos</Text>
+        <Button mode="outlined" style={styles.addButton} onPress={() => { setSelectedCusto(null); setModalCustoVisible(true); }}>+Novo</Button>
+      </View>
+      <View style={styles.dashedCard}>
+        <ScrollView style={styles.scrollContent}>
+        {infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).length ?
+          infoMes?.custos.filter(c => selectedCategoria === 'todos' || c.categoria?.toString() === selectedCategoria).map((custo) => (
+          <TouchableRipple key={custo.id} onPress={() => handleVisualizarCusto(custo.id)} rippleColor="rgba(5, 60, 222, 0.37)">
+            <View style={styles.itemRow}>
+              <Text style={styles.itemText}>{custo.fonte} R$ {custo.valor.toFixed(2)}</Text>
+                <View style={styles.itemActionsRow}>
+                  <IconButton icon="pencil" size={22} style={styles.editButton} onPress={() => handleVisualizarEdicaoCusto(custo)} />
+                  <IconButton icon="delete" size={22} style={styles.deleteButton} onPress={() => handleExcluirCusto(custo.id)} />
+                </View>
+            </View>
+          </TouchableRipple>
+          )) : <Text style={styles.emptyText}>Nenhum custo cadastrado.</Text>}
+        </ScrollView>
+      </View>
       </View>
 
-      <View style={styles.modalButtons}>
-       <Button
-        mode="outlined"
-        onPress={() => {
-         setModalCustoVisible(false);
-         limparFormularioCusto();
+      <Portal>
+      <EntradaModal
+        visible={modalEntradaVisible}
+        onDismiss={() => {
+        setModalEntradaVisible(false);
+        limparFormularioEntrada();
         }}
-        style={styles.modalButton}
-       >
-        Cancelar
-       </Button>
-       <Button
-        mode="contained"
-        onPress={handleSalvarCusto}
-        style={styles.modalButton}
-       >
-        Salvar
-       </Button>
+        onSave={handleSaveEntrada}
+        entrada={selectedEntrada ?? undefined}
+      />
+
+      <CustoModal
+        visible={modalCustoVisible}
+        onDismiss={() => {
+          setModalCustoVisible(false);
+          limparFormularioCusto();
+        }}
+        onSave={handleSaveCusto}
+        categorias={categorias}
+        custo={selectedCusto ?? undefined}
+      />
+      </Portal>
+
+      <View style={{ marginTop: 24 }}>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', fontFamily: 'monospace', marginBottom: 16 }}>Gráfico de Despesas por categoria</Text>
+        <PieChart 
+          data={chartData}
+          width={screenWidth}
+          height={220}
+          chartConfig={chartConfig}
+          accessor="population"
+          backgroundColor='transparent'
+          paddingLeft="15"
+        />
       </View>
-     </Modal>
-    </Portal>
+    </ScrollView>
+
+
     
    </KeyboardAvoidingView>
   </PaperProvider>

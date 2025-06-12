@@ -2,11 +2,11 @@ import { CategoriesActions } from '@/actions/categories';
 import { DataActions } from '@/actions/datas';
 import { CustoModal } from '@/components/CustoModal';
 import { Categoria } from '@/models/categoria';
-import { Custo } from '@/models/custo';
+import { AtualizarCusto, CriarCusto, Custo } from '@/models/custo';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { Appbar, Button, DefaultTheme, PaperProvider, Text } from 'react-native-paper';
 
 export default function CustoPage() {
@@ -28,7 +28,7 @@ export default function CustoPage() {
    };
   
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, idMes } = useLocalSearchParams<{ id: string, idMes: string }>();
   const router = useRouter();
   const db = useSQLiteContext();
 
@@ -47,11 +47,12 @@ export default function CustoPage() {
         setCusto(custo);
       } catch (e: any) {
         console.log("Erro ao buscar custo: ", e);
+        Alert.alert("Houve um erro ao buscar custo, contate o suporte: ", e.message);
       }
 
-      // setCusto(custoEncontrado);
     } catch (e: any) {
       console.log("Erro ao buscar custo: ", e);
+      Alert.alert("Houve um erro ao buscar custo, contate o suporte: ", e.message);
     }
   };
 
@@ -72,19 +73,29 @@ export default function CustoPage() {
     } catch (e: any) {
       console.log("Erro ao atualizar custo: ", e);
     }
-  };
+  }
+
+  const handleSaveCusto = async (custo: CriarCusto | AtualizarCusto) => {
+    if ('id' in custo) {
+      await handleSalvarCusto(custo);
+    }
+   }
 
   useEffect(() => {
     buscarCusto();
     buscarCategorias();
   }, []);
 
+  const handleVoltar = () => {
+    router.replace({ pathname: "/mes/[id]", params: { id: idMes } });
+  }
+
   if (!custo) {
     return (
       <PaperProvider theme={theme}>
         <View style={styles.container}>
           <Appbar.Header style={{ backgroundColor: "#fff" }}>
-            <Appbar.BackAction color="#000" onPress={() => router.back()} />
+            <Appbar.BackAction color="#000" onPress={handleVoltar} />
             <Appbar.Content title="Carregando..." color="#000" />
           </Appbar.Header>
           
@@ -102,7 +113,7 @@ export default function CustoPage() {
     <PaperProvider theme={theme}>
       <View style={styles.container}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => router.back()} />
+          <Appbar.BackAction onPress={handleVoltar} />
           <Appbar.Content title={custo.fonte} />
         </Appbar.Header>
 
@@ -133,7 +144,7 @@ export default function CustoPage() {
         <View style={styles.buttonContainer}>
           <Button
             mode="outlined"
-            onPress={() => router.back()}
+            onPress={handleVoltar}
             style={styles.button}
             textColor='#1E90FF'
           >
@@ -151,7 +162,7 @@ export default function CustoPage() {
         <CustoModal
           visible={modalVisible}
           onDismiss={() => setModalVisible(false)}
-          onSave={handleSalvarCusto}
+          onSave={handleSaveCusto}
           categorias={categorias}
           custo={custo}
         />

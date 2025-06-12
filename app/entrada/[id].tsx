@@ -4,7 +4,7 @@ import { Entrada } from '@/models/entrada';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { Appbar, Button, DefaultTheme, PaperProvider, Text } from 'react-native-paper';
 
 const theme = {
@@ -24,7 +24,7 @@ const theme = {
 };
 
 export default function EntradaPage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, idMes } = useLocalSearchParams<{ id: string, idMes: string }>();
   const router = useRouter();
   const db = useSQLiteContext();
 
@@ -40,6 +40,7 @@ export default function EntradaPage() {
       setEntrada(entradaEncontrada);
     } catch (e: any) {
       console.log("Erro ao buscar entrada: ", e);
+      Alert.alert("Houve um erro ao buscar entrada, contate o suporte: ", e.message);
     }
   };
 
@@ -49,6 +50,7 @@ export default function EntradaPage() {
       await buscarEntrada();
     } catch (e: any) {
       console.log("Erro ao atualizar entrada: ", e);
+      Alert.alert("Houve um erro ao atualizar entrada, contate o suporte: ", e.message);
     }
   };
 
@@ -56,12 +58,16 @@ export default function EntradaPage() {
     buscarEntrada();
   }, []);
 
+  const handleVoltar = () => {
+    router.replace({ pathname: "/mes/[id]", params: { id: idMes } });
+  }
+
   if (!entrada) {
     return (
       <PaperProvider theme={theme}>
         <View style={styles.container}>
           <Appbar.Header style={{ backgroundColor: "#fff" }}>
-            <Appbar.BackAction color="#000" onPress={() => router.back()} />
+            <Appbar.BackAction color="#000" onPress={handleVoltar} />
             <Appbar.Content title="Carregando..." color="#000" />
           </Appbar.Header>
           
@@ -77,7 +83,7 @@ export default function EntradaPage() {
     <PaperProvider theme={theme}>
       <View style={styles.container}>
         <Appbar.Header>
-          <Appbar.BackAction onPress={() => router.back()} />
+          <Appbar.BackAction onPress={handleVoltar} />
           <Appbar.Content title={entrada.titulo} />
         </Appbar.Header>
 
@@ -103,7 +109,7 @@ export default function EntradaPage() {
         <View style={styles.buttonContainer}>
           <Button
             mode="outlined"
-            onPress={() => router.back()}
+            onPress={handleVoltar}
             style={styles.button}
             textColor='#1E90FF'
           >

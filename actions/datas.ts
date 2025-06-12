@@ -1,5 +1,5 @@
 import { InfoMes } from "@/interfaces/infoMes";
-import { Custo } from "@/models/custo";
+import { AtualizarCusto, CriarCusto, Custo } from "@/models/custo";
 import { Data } from "@/models/data";
 import { AtualizarEntrada, CriarEntrada, Entrada } from "@/models/entrada";
 import { SQLiteDatabase } from "expo-sqlite";
@@ -10,10 +10,29 @@ export class DataActions {
 
  static async getAll(db: SQLiteDatabase) {
   const sql = `
-   SELECT * FROM datas;
+   SELECT 
+    datas.id,
+    datas.mes,
+    datas.ano,
+    datas.created_at,
+    COALESCE(c.custos_total, 0) AS custos_total,
+    COALESCE(e.entradas_total, 0) AS entradas_total
+   FROM datas
+    LEFT JOIN (
+      SELECT id_data, SUM(valor) AS custos_total
+      FROM custos
+      GROUP BY id_data
+    ) AS c ON datas.id = c.id_data
+    LEFT JOIN (
+      SELECT id_data, SUM(valor) AS entradas_total
+      FROM entradas
+      GROUP BY id_data
+    ) AS e ON datas.id = e.id_data
+    ORDER BY datas.id DESC
   `;
 
   const result = await db.getAllAsync(sql) as Data[];
+
   return result;
  }
 
@@ -29,12 +48,23 @@ export class DataActions {
  }
 
  static async delete(db: SQLiteDatabase, id: number) {
+
+  const sqlCustos = `
+   DELETE FROM custos WHERE id_data = ?;
+  `;
+
+  const sqlEntradas = `
+   DELETE FROM entradas WHERE id_data = ?;
+  `;
+
   const sql = `
    DELETE FROM datas WHERE id = ?;
   `;
 
   const params = [id];
 
+  await db.runAsync(sqlCustos, params);
+  await db.runAsync(sqlEntradas, params);
   const result = await db.runAsync(sql, params);
   return result;
  }
@@ -74,7 +104,7 @@ export class DataActions {
   return info;
  }
 
- static async addCost(db: SQLiteDatabase, custo: Custo) {
+ static async addCost(db: SQLiteDatabase, custo: CriarCusto) {
 
   const sql = `
    INSERT INTO custos (
@@ -98,7 +128,7 @@ export class DataActions {
 
   const result = await db.runAsync(sql, params);
   return result;
- }
+ };
 
  static async addEntry(db: SQLiteDatabase, entrada: CriarEntrada) {
 
@@ -154,8 +184,7 @@ export class DataActions {
   return result as Entrada;
  }
 
-
- static async updateCost(db: SQLiteDatabase, custo: Custo) {
+ static async updateCost(db: SQLiteDatabase, custo: AtualizarCusto) {
   const sql = `
    UPDATE custos SET
     valor = ?,

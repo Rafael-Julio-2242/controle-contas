@@ -48,6 +48,7 @@ export default function Categorias() {
       handleBuscarCategorias();
     } catch (e: any) {
       console.log('[erro ao adicionar categoria]: ', e.message);
+      Alert.alert("Houve um erro ao adicionar categoria, contate o suporte: ", e.message);
     }
 
     setModalVisible(false);
@@ -63,6 +64,7 @@ export default function Categorias() {
       setCategorias(categorias);
     } catch (e: any) {
       console.log('[erro ao buscar categorias]: ', e.message);
+      Alert.alert("Houve um erro ao buscar categorias, contate o suporte: ", e.message);
     }
 
   }
@@ -96,6 +98,7 @@ export default function Categorias() {
               handleBuscarCategorias();
             } catch (e: any) {
               console.log('[erro ao excluir categoria]: ', e.message);
+              Alert.alert("Houve um erro ao excluir categoria, contate o suporte: ", e.message);
             }
           }
         }
